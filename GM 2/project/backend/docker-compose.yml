@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: ./services/web/local/Dockerfile
+    image: &img backend
+    user: root
+    restart: always
+    env_file:
+      - ./.flaskenv
+    working_dir: /root
+    volumes:
+      - ./:/root:cached
+  redis:
+    image: redis
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: ./services/celery_worker/Dockerfile
+    user: root
+    env_file:
+      - ./.flaskenv
+    depends_on:
+      - redis
+      - web
+
+  celery_beat:
+    build:
+        context: .
+        dockerfile: ./services/celery_beat/Dockerfile
+    env_file:
+      - ./.flaskenv
+    depends_on:
+      - redis
+      - web
+
+  nginx:
+    build:
+      context: ./services/nginx
+    ports:
+      - 80:80
+    depends_on:
+      - web
